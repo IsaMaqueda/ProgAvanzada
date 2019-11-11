@@ -59,9 +59,9 @@ Open another tab in terminal and run
 run the program. Further instructions will follow.
 
 ## Data Structures 
-* [bank_t] stores the data of the bank. It has an int to count the total number of transactions performed, and an array of floats that store the balance of the accounts. Each account is identified by the index in that array.
-* [locks_t] has the mutex locks for the variables in the previous structure. One for the total number of transactions, and one for each of the accounts.
-* [thread_data_t] has pointers to the previous two, plus the file descriptor of the socket to communicate with the client. This is the one that is passed to each thread as a parameter.
+* **bank_t** stores the data of the bank. It has an int to count the total number of transactions performed, and an array of floats that store the balance of the accounts. Each account is identified by the index in that array.
+* **locks_t** has the mutex locks for the variables in the previous structure. One for the total number of transactions, and one for each of the accounts.
+* **thread_data_t** has pointers to the previous two, plus the file descriptor of the socket to communicate with the client. This is the one that is passed to each thread as a parameter.
 
 ## Description of the program
 
