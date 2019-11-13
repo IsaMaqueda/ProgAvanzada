@@ -2,10 +2,9 @@
     Client program to access the accounts in the bank
     This program connects to the server using sockets
 
-    Gilberto Echeverria
-    gilecheverria@yahoo.com
-    29/03/2018
-    07/11/2019  Split 'bankOperations' into three functions
+    Isabel Maqueda Rolon
+    A01652906
+    11/14/2019
 */
 
 #include <stdio.h>

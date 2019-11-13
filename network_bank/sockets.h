@@ -6,9 +6,9 @@
     - Creation of a socket on a client
     - Error validation when sending or receiving messages
 
-    Gilberto Echeverria
-    gilecheverria@yahoo.com
-    31/03/2018
+   Isabel Maqueda Rolon
+   A01652906
+   11/14/2019
 */
 
 #ifndef SOCKETS_H
