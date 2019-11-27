@@ -3,11 +3,11 @@
 ### Variables for this project ###
 # These should be the only ones that need to be modified
 # The files that must be compiled, with a .o extension
-OBJECTS = change_image.o string_functions.o pgm_image.o
+OBJECTS = string_functions.o pgm_image.o
 # The header files
 DEPENDS = string_functions.h pgm_image.h
 # The executable program to be created
-MAIN = change_image
+MAIN = pgm_image
 
 ### Variables for the compilation rules ###
 # These should work for most projects, but can be modified when necessary

@@ -1,15 +1,14 @@
 /*
     Simple program to use the pgm library
-
-    Gilberto Echeverria
-    17/11/2019
+    Isabel Maqueda Rolon
+    27/11/2019
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "pgm_image.h"
 
-int main()
+int change()
 {
     char * in_filename = "sample_1.pgm";
     char * out_filename = "sample_2.pgm";

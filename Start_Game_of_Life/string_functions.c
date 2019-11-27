@@ -1,9 +1,9 @@
 /*
    Functions for working with arrays of characters
 
-    Gilberto Echeverria
-    gilecheverria@yahoo.com
-    01/02/2017
+    Isabel Maqueda Rolon
+    A01652906
+    27/11/2019
 */
 
 #include "string_functions.h"

@@ -5,14 +5,290 @@
     http://netpbm.sourceforge.net/doc/pgm.html
     http://rosettacode.org/wiki/Bitmap/Write_a_PGM_file#C
 
-   Gilberto Echeverria
-   gilecheverria@yahoo.com
-   06/10/2016
+   Isabel Maqueda Rolon
+   A01652906
+   27/11/2019
 */
 
 #include "pgm_image.h"
 
 //// FUNCTION DECLARATIONS
+void allocateImage(image_t * image);
+void freeImage(image_t * image);
+void copyPGM(const pgm_t * source, pgm_t * destination);
+void readPGMFile(const char * filename, pgm_t * pgm_image);
+void readPGMHeader(pgm_t * pgm_image, FILE * file_ptr);
+void readPGMTextData(pgm_t * pgm_image, FILE * file_ptr);
+void readPGMBinaryData(pgm_t * pgm_image, FILE * file_ptr);
+void writePGMFile(const char * filename, const pgm_t * pgm_image);
+void writePGMTextData(const pgm_t * pgm_image, FILE * file_ptr);
+void writePGMBinaryData(const pgm_t * pgm_image, FILE * file_ptr);
+void negativePGM(pgm_t * pgm_image);
+//void greyscalePGM(pgm_t * pgm_image);
+void blurPGM(pgm_t * pgm_image, int radius);
+void asciiArtPGM(pgm_t * pgm_image, const char * out_filename);
+
+//
+void changePointers(pgm_t * pmg_image1, pgm_t * pmg_image2);
+int analize_cell(pgm_t * pgm_image, int i, int j);
+int mod(int i, int limit);
+
+
+//Paralel Functions
+void GameThreads(pgm_t * pmg_image1, pgm_t * pgm_image2 , int threads);
+void  * useThreads(void * arg);
+//OpenMp functions
+void GameOMP(pgm_t * pgm_image1, pgm_t * pgm_image2);
+
+
+
+
+int main(int argc, char * argv[])
+{
+    int iterations = atoi(argv[1]);
+
+    char * filename_in = argv[2];
+    int num_threads;
+    pgm_t * initial_image = malloc(sizeof(pgm_t));
+
+    //reads initial image
+    readPGMFile(filename_in, initial_image);
+    
+    //creates the copy to manipulate
+
+    pgm_t * pgm_image = malloc(sizeof(pgm_t));
+    strcpy(pgm_image->magic_number, initial_image->magic_number);
+    pgm_image->image.height = initial_image->image.height;
+    pgm_image->image.width = initial_image->image.width;
+    allocateImage(&pgm_image->image);
+    copyPGM(initial_image, pgm_image);
+
+    for(int i = 0; i < iterations; i++)
+    {
+        //printf("Hello \n");
+        //uses threads
+            if (argc == 4)
+            {
+                printf("Estoy usando threads \n ");
+                num_threads = atoi(argv[3]);
+                GameThreads(initial_image,pgm_image,num_threads);
+                //printf("Acabo de usar threads 1 \n");
+            }
+            //uses OpenMP
+            else
+            {
+                printf("Estoy usando OpenMP \n");
+                GameOMP(initial_image,pgm_image);
+            }
+
+            printf("Acabo de usar threads  3\n");
+            
+            //write image 
+            char filename[20];
+            sprintf(filename, "iteration-%05d.pgm", i);
+            writePGMFile(filename , pgm_image);
+
+            //swap pointers
+            changePointers(initial_image, pgm_image);
+
+    }
+    
+}
+
+//swap the images used 
+void changePointers(pgm_t * pmg_image1, pgm_t * pmg_image2)
+{
+    pgm_t temp = *pmg_image1;
+
+    *pmg_image1 = *pmg_image2;
+    *pmg_image2 = temp;
+
+    return;
+}
+
+
+//function to create threads to the game of life
+void GameThreads(pgm_t * pgm_image1, pgm_t * pgm_image2 , int threads)
+{
+
+    //printf("threads1 \n");
+    //creates the treads
+    pthread_t tids[threads];
+
+    int range; 
+    int status;
+    //creates the struct to store
+    useth_t thread_limits[threads];
+
+    //Initializes the lock
+    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+    //set the number of lines each thread will do
+    range  = pgm_image1->image.width / threads; 
+
+    //printf("range %d, \n", range);
+
+    //creates the threads
+    for(int i = 0; i < threads ; i++)
+    {
+        //printf("threads %d \n", i);
+
+        thread_limits[i].lock = &lock;
+        thread_limits[i].start = i * range;
+        thread_limits[i].stop = i * range + range; 
+        thread_limits[i].pgm_image1 = pgm_image1;
+        thread_limits[i].pgm_image2 = pgm_image2;
+
+        status = pthread_create(&tids[i], 0, useThreads, &thread_limits[i]);
+
+        if(status < 0)
+        {
+            perror("ERROR: pthread_create");
+            exit(EXIT_FAILURE);
+        }
+
+
+    }
+    //jions the threads
+    for(int i = 0; i< threads;i++)
+    {
+        pthread_join(tids[i], NULL);
+    }
+
+    /*for (int i = 0; i< thread_limits->pgm_image2->image.width; i++)
+    {
+        for(int j = 0; j< thread_limits->pgm_image2->image.height; j++)
+        {
+            printf("The value of %d, %d of pgm_image 2 is: %d \n", i, j, thread_limits->pgm_image2->image.pixels[i][j].value);
+        }
+    }*/
+
+    pgm_image2 = thread_limits->pgm_image2;
+    pgm_image1 = thread_limits->pgm_image1;
+
+    //checks that pgm_image2 is copied correctly
+    /*for (int i = 0; i< pgm_image2->image.width; i++)
+    {
+        for(int j = 0; j< pgm_image2->image.height; j++)
+        {
+            printf("The value of %d, %d of pgm_image 2 is: %d \n", i, j, pgm_image2->image.pixels[i][j].value);
+        }
+    }*/
+    //printf("Acabo de usar threads -1 \n");
+    //printf("Acabo de usar threads 0 \n");
+
+}
+//play the game, changes the value of the second image
+void  * useThreads(void * arg)
+{
+
+    useth_t * thread_limits = (useth_t * ) arg;
+    //printf("Limits %d, %d \n ",thread_limits->start,thread_limits->stop);
+    for(int i = thread_limits->start; i <thread_limits->stop;i++)
+    {
+        for(int j = 0; j < thread_limits->pgm_image1->image.height; j++)
+        {
+            pthread_mutex_lock(thread_limits->lock);
+            //analize cell returns the value according to the rules
+            thread_limits->pgm_image2->image.pixels[i][j].value = analize_cell(thread_limits->pgm_image1, i, j);
+            pthread_mutex_unlock(thread_limits->lock);
+        }
+
+    }
+    pthread_exit(NULL);
+}
+
+//checks the number of the cell
+int mod(int n, int limit)
+{
+    //if the cell outisde of range in the right or the top, it returns the last position posible
+    if(n < 0)
+    {
+        return limit -1;
+    }
+    //if the cell outisde of range in the left or the bottom, it returns the first position posible
+    else if (n >= limit)
+    {
+        return 0;
+    }
+    else 
+    {
+        return n;
+    }
+
+
+}
+//analize cell returns the value according to the rules
+int analize_cell(pgm_t * pgm_image, int i, int j)
+{
+    int alive = 0, dead = 0;
+    int limitH= pgm_image->image.width;
+    int limitV = pgm_image->image.height;
+
+
+    //check if neighbour is alive or dead
+    //mod rounds the neighbour
+    
+    (pgm_image->image.pixels[mod(i-1,limitH)][mod(j-1,limitV)].value ? alive++ : dead++);
+
+    (pgm_image->image.pixels[mod(i-1,limitH)][mod(j,limitV)].value ? alive++ : dead++);
+
+    (pgm_image->image.pixels[mod(i-1,limitH)][mod(j+1,limitV)].value ? alive++ : dead++);
+
+    (pgm_image->image.pixels[mod(i,limitH)][mod(j-1,limitV)].value ? alive++ : dead++);
+    
+    (pgm_image->image.pixels[mod(i,limitH)][mod(j+1,limitV)].value ? alive++ : dead++);
+
+    (pgm_image->image.pixels[mod(i+1,limitH)][mod(j-1,limitV)].value ? alive++ : dead++);
+
+    (pgm_image->image.pixels[mod(i+1,limitH)][mod(j,limitV)].value ? alive++ : dead++);
+
+    (pgm_image->image.pixels[mod(i+1,limitH)][mod(j+1,limitV)].value ? alive++ : dead++);
+
+    //Any live cell with fewer than two live neighbours dies, as if caused by underpopulation.
+    if (alive < 2)
+    {
+        return 0;
+    }
+    //Any live cell with more than three live neighbours dies, as if by overpopulation.
+    else if(alive > 3)
+    {
+        return 0;
+    }
+    //Any live cell with two or three live neighbours lives on to the next generation
+    else if (pgm_image->image.pixels[i][j].value == 1 && (alive==2 || alive == 3))
+    {
+        return 1;
+    }
+    //Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction
+    else if (pgm_image->image.pixels[i][j].value == 0 && alive == 3)
+    {
+        return 1;
+    }
+}
+//Plays the game of life using OpenMp 
+void GameOMP(pgm_t * pgm_image1, pgm_t * pgm_image2)
+{
+
+    int i = 0; int j = 0; 
+    //starts the OpenMp parallelization
+    #pragma omp parallel default(none) shared(pgm_image1, pgm_image2) private(i,j)
+    {
+        #pragma omp for
+        for(i =0; i < pgm_image1->image.width ; i++)
+        {
+            for(j = 0; j< pgm_image1->image.height; j++)
+            {
+                //analize cell returns the value according to the rules
+                pgm_image2->image.pixels[i][j].value = analize_cell(pgm_image1, i, j);
+            }
+
+        }
+    }
+    
+
+}
+
 
 // Generate space to store the image in memory
 void allocateImage(image_t * image)
