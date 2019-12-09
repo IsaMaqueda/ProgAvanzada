@@ -1,0 +1,3 @@
+SITUATION TYPE ENEMIES DESCRIPTION
+0 0 2 The party members found themselves surrounded by evil, vicious marshmallow people ready to attack them.
+1 1 0 The player finds itself in a room full of water, in the middle is a wooden chest with an iron lock. You find the key:
